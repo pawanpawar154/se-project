@@ -137,8 +137,11 @@ def extract_text_from_image(filepath):
 
 
 # 📤 UPLOAD
-@app.route('/upload', methods=['POST'])
+@app.route('/upload', methods=['GET', 'POST'])
 def upload():
+    if request.method == 'GET':
+        return redirect('/home')  # prevents "Not Found" error
+
     if 'user' not in session:
         return redirect('/login')
 
