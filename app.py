@@ -9,8 +9,7 @@ app.secret_key = "secret123"
 
 # 📂 Upload folder
 UPLOAD_FOLDER = 'static/uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
@@ -44,11 +43,10 @@ def init_db():
 init_db()
 
 
-# Landing Page
+# 🏠 Landing Page
 @app.route('/')
 def landing():
     return render_template('landingpage.html')
-
 
 # 🔐 LOGIN
 @app.route('/login', methods=['GET', 'POST'])
@@ -62,7 +60,6 @@ def login():
 
         cursor.execute("SELECT * FROM users WHERE email=?", (email,))
         user = cursor.fetchone()
-
         conn.close()
 
         if user and check_password_hash(user[3], password):
@@ -90,13 +87,12 @@ def signup():
 
         try:
             cursor.execute(
-                "INSERT INTO users (username,email,password) VALUES (?, ?, ?)",
+                "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
                 (username, email, hashed_password)
             )
             conn.commit()
             conn.close()
             return redirect('/login')
-
         except sqlite3.IntegrityError:
             conn.close()
             return render_template('signup.html', error="Email already exists")
@@ -126,7 +122,7 @@ def extract_text_from_pdf(filepath):
     return text
 
 
-# 🖼️ IMAGE OCR (SAFE VERSION)
+# 🖼️ IMAGE OCR (SAFE)
 def extract_text_from_image(filepath):
     try:
         import pytesseract
@@ -134,18 +130,15 @@ def extract_text_from_image(filepath):
 
         img = Image.open(filepath)
         text = pytesseract.image_to_string(img)
-
         return text
-
     except Exception as e:
         print("OCR Error:", e)
         return "Image OCR not supported on server"
 
 
-# 📤 UPLOAD + ANALYZE
+# 📤 UPLOAD
 @app.route('/upload', methods=['POST'])
 def upload():
-
     if 'user' not in session:
         return redirect('/login')
 
@@ -163,10 +156,8 @@ def upload():
     # Detect file type
     if file.filename.lower().endswith('.pdf'):
         text = extract_text_from_pdf(filepath)
-
     elif file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
         text = extract_text_from_image(filepath)
-
     else:
         return "Unsupported file type"
 
@@ -223,11 +214,10 @@ def profile():
 # 🚪 LOGOUT
 @app.route('/logout')
 def logout():
-    session.pop('user', None)
-    session.pop('email', None)
+    session.clear()
     return redirect('/')
 
 
 # ▶ RUN
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)vv
+    app.run(host='0.0.0.0', port=10000)
