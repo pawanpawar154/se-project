@@ -1,22 +1,26 @@
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  <!-- ✅ ADD HERE -->
+    <title>Profile - MediReport</title>
 
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
 
 <!-- Toggle Button -->
-    <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+<button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
 <!-- Sidebar -->
 <div id="sidebar" class="sidebar">
-
-    <!-- Toggle Button -->
-    
-
     <div class="sidebar-content">
         <h2 class="logo">🩺 MediReport</h2>
         <hr>
 
-        <!-- Username -->
         <p class="username">{{ username }}</p>
 
-        <!-- Menu -->
         <a href="/home">🏠 Dashboard</a>
         <a href="/history">📜 History</a>
         <a href="/logout">🚪 Logout</a>
@@ -32,10 +36,12 @@
     </div>
 </div>
 
-
 <script>
 function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("active");
     document.getElementById("content").classList.toggle("shift");
 }
 </script>
+
+</body>
+</html>
