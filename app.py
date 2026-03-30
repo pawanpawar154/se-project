@@ -1,10 +1,8 @@
-
 from flask import Flask, render_template, request, redirect, session, url_for
 from analyzer import analyze_report
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
-import re
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -21,7 +19,6 @@ def init_db():
     conn = sqlite3.connect("medireport.db")
     cursor = conn.cursor()
 
-    # Users table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,7 +28,6 @@ def init_db():
     )
     """)
 
-    # ✅ FIXED: reports uses email (NOT username)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS reports (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +51,6 @@ def landing():
 
 
 # 🔐 LOGIN
-# 🔐 LOGIN
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -70,16 +65,15 @@ def login():
 
         conn.close()
 
-        # ✅ FIXED: correct password index
         if user and check_password_hash(user[3], password):
-            # store username for display, email for DB
-            session['user'] = user[1]      # username
-            session['email'] = user[2]     # email (for DB queries)
+            session['user'] = user[1]
+            session['email'] = user[2]
             return redirect(url_for('home'))
         else:
             return render_template('login.html', error="Invalid email or password")
 
     return render_template('login.html')
+
 
 # 📝 SIGNUP
 @app.route('/signup', methods=['GET', 'POST'])
@@ -94,10 +88,9 @@ def signup():
         conn = sqlite3.connect("medireport.db")
         cursor = conn.cursor()
 
-        # ✅ FIXED: handle duplicate email
         try:
             cursor.execute(
-                "INSERT INTO users (username,email, password) VALUES (?,?, ?)",
+                "INSERT INTO users (username,email,password) VALUES (?, ?, ?)",
                 (username, email, hashed_password)
             )
             conn.commit()
@@ -126,7 +119,6 @@ def extract_text_from_pdf(filepath):
     text = ""
     with open(filepath, "rb") as file:
         reader = PyPDF2.PdfReader(file)
-
         for page in reader.pages:
             if page.extract_text():
                 text += page.extract_text()
@@ -134,17 +126,20 @@ def extract_text_from_pdf(filepath):
     return text
 
 
-# 🖼️ IMAGE OCR
+# 🖼️ IMAGE OCR (SAFE VERSION)
 def extract_text_from_image(filepath):
-    import pytesseract
-    from PIL import Image
+    try:
+        import pytesseract
+        from PIL import Image
 
-    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+        img = Image.open(filepath)
+        text = pytesseract.image_to_string(img)
 
-    img = Image.open(filepath)
-    text = pytesseract.image_to_string(img)
+        return text
 
-    return text
+    except Exception as e:
+        print("OCR Error:", e)
+        return "Image OCR not supported on server"
 
 
 # 📤 UPLOAD + ANALYZE
@@ -165,7 +160,7 @@ def upload():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
     file.save(filepath)
 
-    # 🔥 Detect file type
+    # Detect file type
     if file.filename.lower().endswith('.pdf'):
         text = extract_text_from_pdf(filepath)
 
@@ -175,10 +170,8 @@ def upload():
     else:
         return "Unsupported file type"
 
-    # 🔥 Analyze
     result, explanation = analyze_report(text)
 
-    # ✅ FIXED: use email column
     conn = sqlite3.connect("medireport.db")
     cursor = conn.cursor()
 
@@ -202,7 +195,6 @@ def history():
     conn = sqlite3.connect("medireport.db")
     cursor = conn.cursor()
 
-    # ✅ FIXED: use email
     cursor.execute("SELECT filename, result, date FROM reports WHERE email=?", (session['email'],))
     data = cursor.fetchall()
 
@@ -220,7 +212,6 @@ def profile():
     conn = sqlite3.connect("medireport.db")
     cursor = conn.cursor()
 
-    # ✅ FIXED: use email
     cursor.execute("SELECT COUNT(*) FROM reports WHERE email=?", (session['email'],))
     count = cursor.fetchone()[0]
 
@@ -233,9 +224,10 @@ def profile():
 @app.route('/logout')
 def logout():
     session.pop('user', None)
+    session.pop('email', None)
     return redirect('/')
 
 
 # ▶ RUN
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    app.run(host='0.0.0.0', port=10000)vv
